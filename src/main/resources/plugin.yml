@@ -1,0 +1,7 @@
+name: PapyrusPAPIBridge
+version: '${version}'
+main: ru.armagidon.papyruspapibridge.PapyrusPAPIBridge
+api-version: 1.16
+depend:
+  - Papyrus
+load: STARTUP

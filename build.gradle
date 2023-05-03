@@ -1,0 +1,49 @@
+plugins {
+    id 'java-library'
+    id 'com.github.johnrengelman.shadow' version "8.1.1"
+}
+
+group = 'ru.armagidon'
+version = '1.0'
+
+repositories {
+    mavenCentral()
+    maven {
+        name = "spigotmc-repo"
+        url = "https://hub.spigotmc.org/nexus/content/repositories/snapshots/"
+    }
+    maven {
+        name = "sonatype"
+        url = "https://oss.sonatype.org/content/groups/public/"
+    }
+
+    maven { url 'https://jitpack.io' }
+    mavenLocal()
+    maven { url = 'https://oss.sonatype.org/content/repositories/snapshots' }
+    maven { url = 'https://oss.sonatype.org/content/repositories/central' }
+}
+
+dependencies {
+    compileOnly "org.spigotmc:spigot-api:1.16.5-R0.1-SNAPSHOT"
+    compileOnly 'com.github.StumpStudio.Papyrus:papyrus-api:1.0'
+    compileOnly 'com.github.StumpStudio.Papyrus:papyrus-bukkit:1.0'
+    implementation 'org.javassist:javassist:3.29.2-GA'
+}
+
+java {
+    toolchain.languageVersion.set(JavaLanguageVersion.of(16))
+}
+
+processResources {
+    def props = [version: version]
+    inputs.properties props
+    filteringCharset 'UTF-8'
+    filesMatching('plugin.yml') {
+        expand props
+    }
+}
+
+shadowJar {
+    archiveClassifier.set('')
+    relocate 'javassist', 'ru.armagidon.javassist'
+}
