@@ -111,7 +111,7 @@ public final class Reflection {
     }
   }
 
-  private static boolean _set(Field field, Object instance, Object value) {
+  public static boolean _set(Field field, Object instance, Object value) {
     if (Modifier.isFinal(field.getModifiers())) {
       try {
         final Object unsafe = getMethod("jdk.internal.misc.Unsafe", "getUnsafe").invoke(null);
