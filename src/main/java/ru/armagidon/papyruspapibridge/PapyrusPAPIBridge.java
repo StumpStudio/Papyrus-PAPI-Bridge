@@ -1,16 +1,13 @@
 package ru.armagidon.papyruspapibridge;
 
 import javassist.*;
+import javassist.bytecode.AccessFlag;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.server.PluginEnableEvent;
-import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.plugin.InvalidDescriptionException;
 import org.bukkit.plugin.InvalidPluginException;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 import ru.armagidon.papyrus.PapyrusAPI;
@@ -18,9 +15,10 @@ import ru.armagidon.papyrus.PapyrusAPI;
 import java.io.*;
 import java.lang.reflect.Proxy;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.*;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
@@ -28,6 +26,7 @@ import java.util.jar.Manifest;
 import java.util.regex.Pattern;
 
 public final class PapyrusPAPIBridge extends JavaPlugin implements Listener {
+
 
     @Override
     public void onEnable() {
@@ -67,6 +66,7 @@ public final class PapyrusPAPIBridge extends JavaPlugin implements Listener {
         });
     }
 
+/*
     @EventHandler(ignoreCancelled = true)
     public void onPAPIEnable(PluginEnableEvent event) {
         if (event.getPlugin().getName().equals("PlaceholderAPI")) {
@@ -88,7 +88,7 @@ public final class PapyrusPAPIBridge extends JavaPlugin implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onServerLoad(ServerLoadEvent event) {
-        if (!Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) return;
+        if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) return;
         File papiFile = getPlaceholderAPIFile(getDataFolder());
         if (papiFile == null) {
             getLogger().info("Temporal folder is empty");
@@ -103,6 +103,7 @@ public final class PapyrusPAPIBridge extends JavaPlugin implements Listener {
             e.printStackTrace();
         }
     }
+*/
 
     private File getPlaceholderAPIFile(File directory) {
         final Pattern fileFilter = Pattern.compile("\\.jar$");
@@ -165,11 +166,9 @@ public final class PapyrusPAPIBridge extends JavaPlugin implements Listener {
         classPool.insertClassPath(new ClassClassPath(PapyrusPAPIBridge.class));
         classPool.importPackage("me.clip.placeholderapi.replacer");
         CtClass placeholderAPIClass = classPool.get(papiClass);
-        CtField field = placeholderAPIClass.getField("REPLACER_PERCENT");
-        placeholderAPIClass.removeField(field);
-        field = CtField.make("public static final Replacer REPLACER_PERCENT = " +
-                "(Replacer) PapyrusPAPIBridge.makeReplacer();", placeholderAPIClass);
-        placeholderAPIClass.addField(field);
+        placeholderAPIClass.removeField(placeholderAPIClass.getDeclaredField("REPLACER_PERCENT"));
+        CtField field = new CtField(classPool.get(replacerClass), "REPLACER_PERCENT", placeholderAPIClass);
+        placeholderAPIClass.addField(field, CtField.Initializer.byCallWithParams(classPool.get(PapyrusPAPIBridge.class.getCanonicalName()), "makeReplacer"));
         placeholderAPIBytes = placeholderAPIClass.toBytecode();
         entryMap.put(placeholderAPIPath, placeholderAPIBytes);
     }
@@ -200,10 +199,9 @@ public final class PapyrusPAPIBridge extends JavaPlugin implements Listener {
         }
         getLogger().info("Found file: " + papiFile.getPath());
 
-        getLogger().info("Moving to temporal location");
-        papiFile = Files.move(papiFile.toPath(), getDataFolder().toPath().resolve(papiFile.getName()),
-                StandardCopyOption.REPLACE_EXISTING).toFile();
-        getLogger().info("New location: " + papiFile.getPath());
+        getLogger().info("Creating a backup for PlaceholderAPI");
+        Files.copy(papiFile.toPath(), getDataFolder().toPath().resolve(papiFile.getName()),
+                StandardCopyOption.REPLACE_EXISTING);
 
         getLogger().info("Unpacking...");
         Map<String, byte[]> entryMap = unpackJarFile(papiFile);
@@ -214,19 +212,8 @@ public final class PapyrusPAPIBridge extends JavaPlugin implements Listener {
         getLogger().info("Magic performed");
 
         getLogger().info("Packing...");
-        File tmp = new File(getDataFolder(), new Random().nextInt(Integer.MAX_VALUE) + ".jar");
-        getLogger().info("Writing to " + tmp.getPath());
-        pack(entryMap, tmp);
-        getLogger().info("Packing done...");
-
-        getLogger().info("Swapping....");
-        Path targetPath = getDataFolder().getParentFile().toPath().resolve(papiFile.getName());
-        getLogger().info("Writing to: " + targetPath);
-        Files.move(tmp.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-        getLogger().info("Swapped");
-
-        Plugin p = Bukkit.getPluginManager().loadPlugin(targetPath.toFile());
-        Bukkit.getPluginManager().enablePlugin(p);
+        pack(entryMap, papiFile);
+        getLogger().info("Packing done");
     }
 
 
