@@ -21,13 +21,17 @@ repositories {
     mavenLocal()
     maven { url = 'https://oss.sonatype.org/content/repositories/snapshots' }
     maven { url = 'https://oss.sonatype.org/content/repositories/central' }
+
+    maven {
+        url = 'https://repo.extendedclip.com/content/repositories/placeholderapi/'
+    }
 }
 
 dependencies {
     compileOnly "org.spigotmc:spigot-api:1.16.5-R0.1-SNAPSHOT"
     compileOnly 'com.github.StumpStudio.Papyrus:papyrus-api:1.0'
     compileOnly 'com.github.StumpStudio.Papyrus:papyrus-bukkit:1.0'
-    implementation 'org.javassist:javassist:3.29.2-GA'
+    compileOnly 'me.clip:placeholderapi:2.11.3'
 }
 
 java {
@@ -45,5 +49,4 @@ processResources {
 
 shadowJar {
     archiveClassifier.set('')
-    relocate 'javassist', 'ru.armagidon.javassist'
 }
